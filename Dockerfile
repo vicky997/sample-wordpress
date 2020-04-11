@@ -1,8 +1,8 @@
 FROM wordpress:latest
 
-RUN rm -rf /var/www/html/*
+RUN rm -rf /usr/src/wordpress/*
 
-ADD . /var/www/html/
+ADD . /usr/src/wordpress/
 
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["apache2-foreground"]
