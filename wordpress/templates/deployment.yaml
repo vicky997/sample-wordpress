@@ -61,14 +61,14 @@ spec:
               port: http
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-      #     volumeMounts:
-      #       - name: {{ include "wordpress.fullname" . }}-claim
-      #         mountPath: /var/www/html/
+          volumeMounts:
+            - name: {{ include "wordpress.fullname" . }}-claim
+              mountPath: /var/www/html/
 
-      # volumes:
-      #   - name: {{ include "wordpress.fullname" . }}-claim
-      #     persistentVolumeClaim:
-      #       claimName: {{ include "wordpress.fullname" . }}-pvc
+      volumes:
+        - name: {{ include "wordpress.fullname" . }}-claim
+          persistentVolumeClaim:
+            claimName: {{ include "wordpress.fullname" . }}-pvc
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
