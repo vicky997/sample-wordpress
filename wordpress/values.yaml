@@ -7,7 +7,7 @@ replicaCount: 1
 image:
   repository: $REPOSITORY_URI
   pullPolicy: IfNotPresent
-  tag:
+  tag: latest
 
 configmap:
   dbUser:
