@@ -9,11 +9,26 @@ phases:
   pre_build:
     commands:
       - aws --version
+      - export AWS_ACCESS_KEY_ID=AKIA4Y7SF2EYP65UQ6GQ
+      - export AWS_SECRET_ACCESS_KEY=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
+      - export AWS_DEFAULT_REGION=ap-south-1
+      - export DB=wpdatabase
+      - export DB_USER=wpuser
+      - export DB_PASSWORD=Wpuser1@
+      - export DB_HOST=wp-db-mysql
       - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
+      - curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+      - chmod +x get_helm.sh
+      - /bin/bash get_helm.sh
+      - curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
+      - helm repo add stable https://kubernetes-charts.storage.googleapis.com/
+      - aws eks --region $AWS_DEFAULT_REGION update-kubeconfig --name $CLUSTER_NAME #--role-arn arn:aws:iam::878291833136:role/service-role/codebuild-wordpress-staging-role
       - REPOSITORY_URI=878291833136.dkr.ecr.ap-south-1.amazonaws.com/iaac
       - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - IMAGE_TAG=${COMMIT_HASH}
       - echo $REPOSITORY_URI:$IMAGE_TAG
+      - export KUBECONFIG=/root/.kube/config
+      - aws opsworks --region ap-south-1 describe-my-user-profile
   build:
     commands:
       - docker build -t $REPOSITORY_URI:latest .
@@ -22,9 +37,12 @@ phases:
     commands:
       - docker push $REPOSITORY_URI:latest
       - docker push $REPOSITORY_URI:$IMAGE_TAG
-      - 'sed -i "s/repository:.*/repository: $REPOSITORY_URI/g" wordpress/values.yaml'
-      - 'sed -i "s/repository:.*/repository: $REPOSITORY_URI/g" wordpress/values.yaml'
-      - tar -cf wordpress 
-      - mv wordpress wordpress-$IMAGE_TAG
-      - aws s3 cp wordpress-$IMAGE_TAG.tar s3://codepipeline-ap-south-1-39504705325/wordpress-pipeline     
+      - 'sed -i "s|repository:.*|repository: $REPOSITORY_URI|g" wordpress/values.yaml'
+      - 'sed -i "s|tag:.*|tag: $IMAGE_TAG|g" wordpress/values.yaml'
+      - kubectl get pods
       - echo creating zip of helm chart
+      - tar -cvf wordpress-$IMAGE_TAG.tar wordpress/
+      - helm upgrade wordpress wordpress/ --set image.repository=$REPOSITORY_URI --set image.tag=$IMAGE_TAG --set configmap.dbUser=$DB_USER --set configmap.dbName=$DB --set configmap.dbPassword=$DB_PASSWORD --set configmap.dbHost=$DB_HOST
+artifacts:
+  files: wordpress-$IMAGE_TAG.tar
+  name: wordpress-$IMAGE_TAG.tar
